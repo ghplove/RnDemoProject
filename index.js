@@ -1,14 +1,17 @@
 import { 
     AppRegistry,
     Platform,
+    Text,
+    View
 } from 'react-native';
 import CodePush from "react-native-code-push";
 import React, { Component } from 'react';
 
-import RNBridge from './src/tools/RNBridge'
+import RNBridge from './src/tools/RNBridge';
 import App from './App';
-import MainPage from './src/views/MainPage'
-import AccountPage from './src/views/AccountPage'
+import MainPage from './src/views/MainPage';
+import AccountPage from './src/views/AccountPage';
+import ProductDetailPage from './src/views/ProductDetailPage';
 
 import {
     StackNavigator,
@@ -19,7 +22,8 @@ const MainStack = StackNavigator({
     App: {
         screen: App,
         navigationOptions:({navigation}) => ({
-            title: 'RN-App'
+            title: 'RN-App',
+            header: null
         }),
     },
     MainPage: {
@@ -31,7 +35,13 @@ const MainStack = StackNavigator({
     AccountPage: {
         screen: AccountPage,
         navigationOptions:({navigation}) => ({
-            title: 'RN-Home'
+            title: 'RN-Account'
+        }),
+    },
+    ProductDetailPage: {
+        screen: ProductDetailPage,
+        navigationOptions:({navigation}) => ({
+            title: 'RN-ProductDetailPage'
         }),
     },
 }, {
@@ -45,7 +55,7 @@ const MainStack = StackNavigator({
           fontWeight: 'bold',
         },
       },
-    },
+    }
 );
 
 class RnDemoApp extends Component {

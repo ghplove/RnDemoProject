@@ -20,6 +20,7 @@ import {
   TouchableHighlight,
   StatusBar,
   Image,
+  RefreshControl,
 } from 'react-native';
 
 const circleSize = 8;
@@ -30,6 +31,7 @@ const ds = new ListView.DataSource({
 });
 
 export default class MainPage extends Component {
+
   constructor(props) {
     super(props);
     this.state = {
@@ -76,37 +78,79 @@ export default class MainPage extends Component {
         {
           image: require('../images/advertisement_img_03.jpg')
         },
-      ]
+      ],
+      isRefreshing: false,
     }
   }
 
+  componentDidMount(){
+    this._startTimer();
+    this.props.navigation.setParams({
+      title:'首页',
+      navagatePress: this.goAccountPage
+    })
+  }
+
+  goAccountPage = () => {
+    this.props.navigation.navigate('AccountPage');
+  }
+
+  static navigationOptions = ({navigation, screenProps}) => ({
+    headerTitle: navigation.state.params?navigation.state.params.title: 'account',
+    headerRight:(
+      <Text style={{color:'white',marginRight:20}} onPress={
+        navigation.state.params?navigation.state.params.navagatePress:null
+      }>我的</Text>
+    ),
+    gestureResponseDistance:{horizontal:300},
+    gesturesEnabled: true
+  });
+
+  componentWillUnmount(){
+    clearInterval(this.interval);
+  }
+
   render() {
-    const { navigate } = this.props.navigation;
+    const {navigate} = this.props.navigation;
     const advertisementCount = this.state.advertisements.length;
     const indicatorWidth = circleSize * advertisementCount + circleMargin * advertisementCount * 2;
     const left = (Dimensions.get('window').width -indicatorWidth) / 2;
 
     return (
       <View style={styles.container}>
-        <StatusBar backgroundColor={'blue'} barStyle={'default'} networkActivityIndicatorVisible={true}/>
+        <StatusBar 
+          backgroundColor={'blue'} 
+          barStyle={'default'} 
+          networkActivityIndicatorVisible={true}/>
         {/* 搜索 */}
         <View style={styles.searchbar}>
-          <TextInput style={styles.input} placeholder='搜索商品' onChangeText={(text) => {
-            this.setState({searchText: text});
-          }}/>
-          <Button style={styles.button} title='搜索' onPress={() =>{
-            console.log('输入的内容：' + this.state.searchText)
-            Alert.alert('click 搜索按钮' + this.state.searchText, null, null)
-          }}/>
+          <TextInput 
+            style={styles.input} 
+            placeholder='搜索商品' 
+            onChangeText={(text) => {
+              this.setState({searchText: text});
+            }}/>
+          <Button 
+            style={styles.button} 
+            title='搜索' onPress={() =>{
+              console.log('输入的内容：' + this.state.searchText)
+              Alert.alert('click 搜索按钮' + this.state.searchText, null, null)
+            }}/>
         </View>
 
         {/* banner */}
         <View style={styles.advertisement}>
-          <ScrollView ref="scrollView" horizontal={true} showsHorizontalScrollIndicator={false} pagingEnabled={true}>
+          <ScrollView 
+            ref="scrollView" 
+            horizontal={true} 
+            showsHorizontalScrollIndicator={false} 
+            pagingEnabled={true}>
             {this.state.advertisements.map((advertisement, index) => {
                   return (
                     <TouchableHighlight onPress={() => Alert.alert('click banner', null, null)}>
-                      <Image style={styles.advertisementContent} source={advertisement.image}/>
+                      <Image 
+                        style={styles.advertisementContent} 
+                        source={advertisement.image}/>
                     </TouchableHighlight>
                   );
               })
@@ -115,7 +159,8 @@ export default class MainPage extends Component {
           <View style={[styles.indicator,{left: left}]}>
             {this.state.advertisements.map((advertisement, index) => {
               return (
-                <View key={index} style={(index === this.state.currentPage)? styles.circleSelected : styles.circle} />
+                <View key={index} 
+                  style={(index === this.state.currentPage)? styles.circleSelected : styles.circle} />
               );
             })}
           </View>
@@ -123,18 +168,15 @@ export default class MainPage extends Component {
 
         {/* 商品 */}
         <View style={styles.product}>
-          <ListView dataSource={this.state.dataSource} renderRow={this._renderRow} renderSeparator={this._renderSeperator}/>
+          <ListView 
+            dataSource={this.state.dataSource} 
+            renderRow={this._renderRow} 
+            renderSeparator={this._renderSeperator}
+            refreshControl={this._renderRefreshControl()}
+            />
         </View>
       </View>
     );
-  }
-
-  componentDidMount() {
-    this._startTimer();
-  }
-
-  componentWillUnmount() {
-    clearInterval(this.interval);
   }
   
   _startTimer() {
@@ -151,7 +193,10 @@ export default class MainPage extends Component {
 
   _renderRow = ((rowData, sectionID, rowID)=> {
     return (
-      <TouchableHighlight onPress={() => Alert.alert('click product', null, null)}>
+      <TouchableHighlight onPress={() => {
+        // Alert.alert('click product', null, null)
+        this.goProductDetailPage(rowData);
+        }}>
         <View style={styles.row}>
           <Image source={rowData.iamge} style={styles.productImage}/> 
           <View style={styles.productText}>
@@ -162,15 +207,46 @@ export default class MainPage extends Component {
       </TouchableHighlight>
     );
   });
-  goMainPage(){
-    this.props.navigation.navigate()
-  }
 
   _renderSeperator(sectionID, rowID, adjacentRowHighlighted){
     return(
       <View key={rowID} style={styles.divider} />
     );
   }
+  
+  _renderRefreshControl() {
+    return (
+      <RefreshControl
+        refreshing={this.state.isRefreshing}
+        onRefresh={this._onRefresh}
+        tintColor={'#ff0000'}
+        title={'正在刷新数据，请稍后...'}
+        titleColor={'#0000ff'}
+        >
+      </RefreshControl>
+    );
+  }
+
+  _onRefresh = () => {
+    this.setState({isRefreshing:true});
+    setTimeout(() => {
+      const product = Array.from(new Array(10))
+        .map((value, index) => ({
+          iamge: require('../images/advertisement_img_01.jpg'),
+          title: '新商品' + index,
+          subTitle: '新商品描述' + index
+        }));
+      this.setState({
+        isRefreshing:false,  
+        dataSource: ds.cloneWithRows(product)
+      })
+    }, 2000);
+  }
+
+  goProductDetailPage(rowData){
+    this.props.navigation.navigate('ProductDetailPage', {productTitle: rowData.title})
+  }
+
 }
 
 const styles = StyleSheet.create({
